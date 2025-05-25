@@ -6,7 +6,7 @@ function App() {
 
   return (
     <div className='min-h-screen bg-gray-600 flex items-center justify-center'>
-      <div className='w-[600px] h-[600px]'>
+      <div className='w-[600px]'>
          <Board />
       </div>
     </div>

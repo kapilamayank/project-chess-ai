@@ -1,22 +1,23 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useMemo, useRef } from 'react'
 import Square from './Square';
 
 import pieceSymbolToImage from '../utils/pieceImage.js';
 
 import { ChessBoard } from '../utils/chess.js';
+import MyTimer from './MyTimer.jsx';
 
-function Board() {
-    // const [chessBoard, setChessBoard] = useState(new ChessBoard());
+function Board({
+    timeFormat=5*60 
+}) {
     const [chessBoard, setChessBoard] = useState(null);
     const [turn, setTurn] = useState('white');
-    // const [gridCells, setGridCells] = useState(chessBoard.getReducedGridRepresentation());
+    
     const [gridCells, setGridCells] = useState([]);
     
-    // chessBoard.setGridCellsSetter(setGridCells);
-    // chessBoard.setTurnSetter(setTurn);
-    // chessBoard.setTurnVariable(turn);
-    
     const [pieceBoard, setPieceBoard] = useState([]);
+    
+    const myTimerRefWhite = useRef(null);
+    const myTimerRefBlack = useRef(null);
 
     useEffect(() => {
         const newBoard = new ChessBoard();
@@ -27,10 +28,18 @@ function Board() {
         setChessBoard(newBoard);
         setGridCells(newBoard.getReducedGridRepresentation());
     }, []);
+
+    //* timer setup
+    useEffect(() => {
+        if (chessBoard) {
+            chessBoard.setTimers(myTimerRefWhite.current, myTimerRefBlack.current);
+            myTimerRefWhite.current.playTimer();
+        }
+    }, [chessBoard, myTimerRefWhite.current, myTimerRefBlack.current]);
     
     useEffect(() => {
         setPieceBoard(formPieceBoard(gridCells, pieceSymbolToImage));
-    }, [gridCells])
+    }, [gridCells]);
 
     const formPieceBoard = (gridCells, pieceSymbolToImage) => {
         if (!gridCells.length) return null;
@@ -52,12 +61,26 @@ function Board() {
         return pieceBoard;
     }
 
-    // const pieceBoard = formPieceBoard(gridCells, pieceSymbolToImage);
 
     return (
-        <div className='w-full h-full aspect-square grid grid-cols-8 grid-rows-8'>
-            { pieceBoard }
-        </div>
+        <>
+            { (chessBoard) ?  
+            ( <div> 
+                <MyTimer
+                myTimerRef={myTimerRefBlack} 
+                timerDuration={timeFormat} 
+                color={'black'} 
+                chessBoard={chessBoard} />
+                <div className='w-full h-full aspect-square grid grid-cols-8 grid-rows-8'>
+                    { pieceBoard }
+                </div>
+                <MyTimer
+                    myTimerRef={myTimerRefWhite}
+                    timerDuration={timeFormat}
+                    color={'white'}
+                    chessBoard={chessBoard} /> 
+            </div> ) : '...' }
+        </>
   )
 }
 

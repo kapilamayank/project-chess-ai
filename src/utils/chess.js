@@ -139,7 +139,7 @@ function isMoveLegal(chessBoard, pieceToMove, newSquare) {
     let enemyMoves = [];
     for (let i = 0; i < enemyPieces.length; i++) {
         if (chessBoard.convertPositionToSquareNumber(enemyPieces[i].position) === newSquare) {
-            console.log(enemyPieces[i]);
+            // console.log(enemyPieces[i]);
             continue;
         } //! this simulates capturing the piece in this move
 
@@ -182,6 +182,8 @@ class Piece {
         this.color = color;
         this.position = position;
         this.availableMoves = availableMoves;
+
+        this.pieceId = 8 * this.position[0] + this.position[1];  // needed later, to render list of captured pieces
     }
 
     calculateFilteredMoves(chessBoard) {
@@ -407,16 +409,6 @@ class King extends Piece {
 
     checkIfKingInCheck(chessBoard) {
         const king = this;
-        // const enemyPieces = chessBoard.piecesOnBoard.filter( (piece) => piece.color !== king.color );
-        // const enemyMoves = [];
-        // for (let i = 0; i < enemyPieces.length; i++) {
-        //     const enemyPiece = enemyPieces[i];
-        //     if (enemyPiece.symbolRepresentation.toUpperCase() === 'P') {
-        //         enemyPiece.calculateAvailableMoves(chessBoard).forEach( (move) => enemyMoves.push(move[0]) );
-        //     } else {
-        //         enemyPiece.calculateAvailableMoves(chessBoard).forEach( (move) => enemyMoves.push(move) );
-        //     }
-        // }
 
         const enemyVision = getEnemyVision(chessBoard, complementColor(this.color));
 
@@ -627,6 +619,8 @@ export class ChessBoard {
         this.setGridCells = null;
         this.setTurn = null;
         this.turn = null;
+
+        this.timers = {};
     }
 
     // setting up
@@ -667,6 +661,13 @@ export class ChessBoard {
         piecesOnBoard.push(new King('black', [0, 4]));
 
         return piecesOnBoard;
+    }
+
+    setTimers(whiteTimer, blackTimer) {
+        this.timers = {
+            'white': whiteTimer,
+            'black': blackTimer,
+        };
     }
 
     getReducedGridRepresentation() {
@@ -717,8 +718,18 @@ export class ChessBoard {
 
     rotateTurn() {
         this.setTurn( (prevTurn) => {
-            if (prevTurn === 'white')   return 'black';
-            else    return 'white';
+            if (prevTurn === 'white') {
+                this.timers.white.pauseTimer();
+                this.timers.black.playTimer();
+
+                return 'black';
+            }
+            else {
+                this.timers.black.pauseTimer();
+                this.timers.white.playTimer();
+                
+                return 'white';
+            }
         } );
     }
 
@@ -758,6 +769,12 @@ export class ChessBoard {
         }
     }
 
+    //* game over
+    
+    timeOut(color) {
+        console.log(color + ' lost');
+    }
+
     makeMove({ fromSquare, toSquare, pieceSymbol }) {
         if (fromSquare === toSquare)
             return;
@@ -765,13 +782,12 @@ export class ChessBoard {
         // en-passant setup
         this.dealWithEnPassant();
 
-        console.log(this.piecesOnBoard);
+        // console.log(this.piecesOnBoard);
         let pieceToMove = this.findMatchingPiece(fromSquare);
         // console.log(pieceToMove);
 
         if (pieceToMove.makeMove(this, toSquare)) {
             this.updateBoard();
-            //! this.calculateAllAvailableMoves();
             this.calculateFilteredMovesForAll();
         } 
     }
