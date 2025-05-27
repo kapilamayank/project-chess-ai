@@ -30,8 +30,10 @@ function MyTimer({
     }
 
     const pauseTimer = () => {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
+        if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+        }
     }
 
     useEffect(() => {

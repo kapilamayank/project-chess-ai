@@ -7,7 +7,7 @@ import { ChessBoard } from '../utils/chess.js';
 import MyTimer from './MyTimer.jsx';
 
 function Board({
-    timeFormat=5*60 
+    timeFormat=5 
 }) {
     const [chessBoard, setChessBoard] = useState(null);
     const [turn, setTurn] = useState('white');
@@ -19,11 +19,17 @@ function Board({
     const myTimerRefWhite = useRef(null);
     const myTimerRefBlack = useRef(null);
 
+    const [gameOverMessage, setGameOverMessage] = useState('');
+    const [showMessage, setShowMessage] = useState(false);
+
     useEffect(() => {
         const newBoard = new ChessBoard();
         newBoard.setGridCellsSetter(setGridCells);
         newBoard.setTurnSetter(setTurn);
         newBoard.setTurnVariable(turn);
+
+        newBoard.setGameOverSetter(setShowMessage);
+        newBoard.setGameOverMessageSetter(setGameOverMessage);
 
         setChessBoard(newBoard);
         setGridCells(newBoard.getReducedGridRepresentation());
@@ -62,10 +68,15 @@ function Board({
     }
 
 
+
     return (
         <>
             { (chessBoard) ?  
-            ( <div> 
+            ( <div className='flex flex-col gap relative'> 
+                <div className={`absolute top-0 left-0 h-full w-full bg-gradient from-black via-gray-800 to-gray-700 bg-black z-10 ${(showMessage)? '' : 'hidden'} opacity-75 flex flex-col items-center justify-center`} >
+                    <div className='text-5xl text-white'> Game Over </div>
+                    <div className='text-3xl text-white'> { gameOverMessage } </div>
+                </div>
                 <MyTimer
                 myTimerRef={myTimerRefBlack} 
                 timerDuration={timeFormat} 
