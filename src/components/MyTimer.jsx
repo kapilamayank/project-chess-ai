@@ -14,17 +14,7 @@ function MyTimer({
     const playTimer = () => {
         if (!intervalRef.current) {
             intervalRef.current = setInterval(() => {
-                setTimeLeft( (prevTime) => {
-                    if (prevTime <= 1) {
-                        clearInterval(intervalRef.current);
-                        intervalRef.current = null;
-                        chessBoard.timeOut(color);
-
-                        return 0;
-                    }
-
-                    return prevTime - 1;
-                });
+                setTimeLeft( (prevTime) => Math.max(prevTime - 1, 0));
             }, 1000);
         }
     }
@@ -35,6 +25,13 @@ function MyTimer({
             intervalRef.current = null;
         }
     }
+
+    useEffect(() => {
+        if (timeLeft === 0) {
+            pauseTimer();
+            chessBoard.timeOut(color);
+        }
+    }, [timeLeft])
 
     useEffect(() => {
         myTimerRef.current = {

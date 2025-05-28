@@ -865,9 +865,10 @@ export class ChessBoard {
 
 //! filtering out illegal moves
 
-// TODO: king in check
-// TODO: check for checkmate and stalemate
-// TODO: timer mechanism + time control options
+// TODO: king in check     -->   done
+// TODO: check for checkmate and stalemate   -->   done
+// TODO: timer mechanism + time control options     -->    done
+// TODO: pawn promotions + square highlights
 // TODO: test chess
 // TODO: AI
 

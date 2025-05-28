@@ -7,7 +7,8 @@ import { ChessBoard } from '../utils/chess.js';
 import MyTimer from './MyTimer.jsx';
 
 function Board({
-    timeFormat=5 
+    timeFormat=5,
+    setTimeFormat 
 }) {
     const [chessBoard, setChessBoard] = useState(null);
     const [turn, setTurn] = useState('white');
@@ -73,9 +74,14 @@ function Board({
         <>
             { (chessBoard) ?  
             ( <div className='flex flex-col gap relative'> 
-                <div className={`absolute top-0 left-0 h-full w-full bg-gradient from-black via-gray-800 to-gray-700 bg-black z-10 ${(showMessage)? '' : 'hidden'} opacity-75 flex flex-col items-center justify-center`} >
+                <div className={`absolute top-0 left-0 h-full w-full bg-black/75 z-10 ${(showMessage)? '' : 'hidden'}  flex flex-col items-center justify-center`} >
                     <div className='text-5xl text-white'> Game Over </div>
                     <div className='text-3xl text-white'> { gameOverMessage } </div>
+                    <div>
+                        <button 
+                        className='block bg-green-600 hover:bg-green-700 text-white opacity-100 p-1 mt-1' 
+                        onClick={() => setTimeFormat(0) }> New Game </button>
+                    </div>
                 </div>
                 <MyTimer
                 myTimerRef={myTimerRefBlack} 
