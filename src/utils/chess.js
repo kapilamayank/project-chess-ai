@@ -605,262 +605,349 @@ class Bishop extends Piece {
 }
 
 export class ChessBoard {
-    constructor(piecesOnBoard, piecesOffBoard=[]) {
-        if (piecesOnBoard) {
-            this.piecesOnBoard = piecesOnBoard;
-        } else {
-            this.piecesOnBoard = this.setDefaultPiecesOnBoard();
-            //! this.calculateAllAvailableMoves();
-            this.calculateFilteredMovesForAll();
-        }
-
-        this.piecesOffBoard = piecesOffBoard;
-
-        this.setGridCells = null;
-        this.setTurn = null;
-        this.turn = null;
-
-        this.setGameOver = null;
-        this.setGameOverMessage = null;
-
-        this.timers = {};
+  constructor(piecesOnBoard, piecesOffBoard = []) {
+    if (piecesOnBoard) {
+      this.piecesOnBoard = piecesOnBoard;
+    } else {
+      this.piecesOnBoard = this.setDefaultPiecesOnBoard();
+      //! this.calculateAllAvailableMoves();
+      this.calculateFilteredMovesForAll();
     }
 
-    // setting up
-    setGridCellsSetter(setGridCells) {
-        this.setGridCells = setGridCells;
+    this.piecesOffBoard = piecesOffBoard;
+
+    this.setGridCells = null;
+    this.setTurn = null;
+    this.turn = null;
+
+    this.setGameOver = null;
+    this.setGameOverMessage = null;
+
+    this.timers = {};
+    this.squares = {};
+  }
+
+  // setting up
+  setGridCellsSetter(setGridCells) {
+    this.setGridCells = setGridCells;
+  }
+
+  setGameOverSetter(setShowMessage) {
+    this.setGameOver = setShowMessage;
+  }
+
+  setGameOverMessageSetter(setGameOverMessage) {
+    this.setGameOverMessage = setGameOverMessage;
+  }
+
+  setTurnVariable(turn) {
+    this.turn = turn;
+  }
+
+  setTurnSetter(setTurn) {
+    this.setTurn = setTurn;
+  }
+
+  setDefaultPiecesOnBoard() {
+    let piecesOnBoard = [];
+    for (let i = 0; i < 8; i++) {
+      piecesOnBoard.push(new Pawn("white", [6, i]));
+      piecesOnBoard.push(new Pawn("black", [1, i]));
     }
 
-    setGameOverSetter(setShowMessage) {
-        this.setGameOver = setShowMessage;
+    for (let i = 0; i < 2; i++) {
+      piecesOnBoard.push(new Bishop("white", [7, 3 * (i + 1) - 1]));
+      piecesOnBoard.push(new Bishop("black", [0, 3 * (i + 1) - 1]));
+
+      piecesOnBoard.push(new Rook("white", [7, 7 * i]));
+      piecesOnBoard.push(new Rook("black", [0, 7 * i]));
+
+      piecesOnBoard.push(new Knight("white", [7, 5 * i + 1]));
+      piecesOnBoard.push(new Knight("black", [0, 5 * i + 1]));
     }
 
-    setGameOverMessageSetter(setGameOverMessage) {
-        this.setGameOverMessage = setGameOverMessage;
+    piecesOnBoard.push(new Queen("white", [7, 3]));
+    piecesOnBoard.push(new Queen("black", [0, 3]));
+
+    piecesOnBoard.push(new King("white", [7, 4]));
+    piecesOnBoard.push(new King("black", [0, 4]));
+
+    return piecesOnBoard;
+  }
+
+  setTimers(whiteTimer, blackTimer) {
+    this.timers = {
+      white: whiteTimer,
+      black: blackTimer,
+    };
+  }
+
+  setSquare(squareNo, { promotionSquare, setShowPromotion }) {
+    this.squares[squareNo] = {
+      promotionSquare,
+      setShowPromotion,
+    };
+
+    // console.log(this.squares);
+  }
+
+  getReducedGridRepresentation() {
+    let grid = [];
+    for (let i = 0; i < 8; i++) {
+      let gridRow = ["", "", "", "", "", "", "", ""];
+      grid.push(gridRow);
     }
 
-    setTurnVariable(turn) {
-        this.turn = turn;
+    this.piecesOnBoard.forEach((piece) => {
+      let row = piece.position[0];
+      let col = piece.position[1];
+      grid[row][col] = piece.symbolRepresentation;
+    });
+
+    return grid;
+  }
+
+  // making moves
+  checkCheck(color) {
+    const king = this.piecesOnBoard.find(
+      (piece) =>
+        piece.color === color && piece.symbolRepresentation.toUpperCase === "K"
+    );
+
+    return true;
+  }
+
+  calculateAllAvailableMoves() {
+    for (let i = 0; i < this.piecesOnBoard.length; i++) {
+      const piece = this.piecesOnBoard[i];
+      piece.availableMoves = piece.calculateAvailableMoves(this);
     }
+  }
 
-    setTurnSetter(setTurn) {
-        this.setTurn = setTurn;
+  calculateFilteredMovesForAll() {
+    for (let i = 0; i < this.piecesOnBoard.length; i++) {
+      const piece = this.piecesOnBoard[i];
+      piece.availableMoves = piece.calculateFilteredMoves(this);
     }
+  }
 
-    setDefaultPiecesOnBoard() {
-        let piecesOnBoard = [];
-        for (let i = 0; i < 8; i++) {
-            piecesOnBoard.push(new Pawn('white', [6, i]));
-            piecesOnBoard.push(new Pawn('black', [1, i]));
-        }
+  convertPositionToSquareNumber(position) {
+    return 8 * position[0] + position[1];
+  }
 
-        for (let i = 0; i < 2; i++) {
-            piecesOnBoard.push(new Bishop('white', [7, 3 * (i+1) - 1]));
-            piecesOnBoard.push(new Bishop('black', [0, 3 * (i+1) - 1]));
+  convertSquareNumberToPosition(squareNumber) {
+    return [Math.floor(squareNumber / 8), Math.floor(squareNumber % 8)];
+  }
 
-            piecesOnBoard.push(new Rook('white', [7, 7 * i]));
-            piecesOnBoard.push(new Rook('black', [0, 7 * i]));
+  rotateTurn() {
+    this.setTurn((prevTurn) => {
+      if (prevTurn === "white") {
+        this.timers.white.pauseTimer();
+        this.timers.black.playTimer();
 
-            piecesOnBoard.push(new Knight('white', [7, 5 * i + 1]));
-            piecesOnBoard.push(new Knight('black', [0, 5 * i + 1]));
-        }
+        return (this.turn = "black");
+      } else {
+        this.timers.black.pauseTimer();
+        this.timers.white.playTimer();
 
-        piecesOnBoard.push(new Queen('white', [7, 3]));
-        piecesOnBoard.push(new Queen('black', [0, 3]));
+        return (this.turn = "white");
+      }
+    });
+  }
 
-        piecesOnBoard.push(new King('white', [7, 4]));
-        piecesOnBoard.push(new King('black', [0, 4]));
+  updateBoard() {
+    this.rotateTurn();
 
-        return piecesOnBoard;
+    const newGrid = this.getReducedGridRepresentation();
+    this.setGridCells(newGrid);
+  }
+
+  findMatchingPiece(squareNo) {
+    let [fromRow, fromCol] = this.convertSquareNumberToPosition(squareNo);
+    let [matchingPiece] = this.piecesOnBoard.filter(
+      (piece) => piece.position[0] === fromRow && piece.position[1] === fromCol
+    );
+
+    return matchingPiece;
+  }
+
+  capturePieceIfPossible(toSquare) {
+    let capturedPiece = this.findMatchingPiece(toSquare);
+    if (capturedPiece) {
+      this.piecesOnBoard = this.piecesOnBoard.filter(
+        (piece) => piece.position !== capturedPiece.position
+      );
+      this.piecesOffBoard.push(capturedPiece);
     }
+  }
 
-    setTimers(whiteTimer, blackTimer) {
-        this.timers = {
-            'white': whiteTimer,
-            'black': blackTimer,
-        };
+  dealWithEnPassant() {
+    // console.log(this.turn);
+    if (this.turn === "white") {
+      this.piecesOnBoard.forEach((piece) => {
+        if (piece.symbolRepresentation === "P") piece.enPassantable = false;
+      });
+    } else {
+      this.piecesOnBoard.forEach((piece) => {
+        if (piece.symbolRepresentation === "p") piece.enPassantable = false;
+      });
     }
+  }
 
-    getReducedGridRepresentation() {
-        let grid = [];
-        for (let i = 0; i < 8; i++) {
-            let gridRow = ['', '', '', '', '', '', '', ''];
-            grid.push(gridRow);
-        }
+  makePromotion(promotionSquareNo, symbolRepresentation) {
+    const promotionSquarePosition =
+      this.convertSquareNumberToPosition(promotionSquareNo);
 
-        this.piecesOnBoard.forEach( (piece) => {
-            let row = piece.position[0];
-            let col = piece.position[1];
-            grid[row][col] = piece.symbolRepresentation;
-        });
+    // remove the pawn
+    this.piecesOnBoard = this.piecesOnBoard.filter((piece) => !(piece.symbolRepresentation.toUpperCase() === 'P' 
+                                                                    && piece.position[0] === promotionSquarePosition[0] 
+                                                                    && piece.position[1] === promotionSquarePosition[1]));
 
-        return grid;
+    // add the new piece
+    if (symbolRepresentation === "Q") {
+        this.piecesOnBoard.push(new Queen('white', promotionSquarePosition));
+    } else if (symbolRepresentation === "R") {
+        this.piecesOnBoard.push(new Rook('white', promotionSquarePosition));
+    } else if (symbolRepresentation === "N") {
+        this.piecesOnBoard.push(new Knight('white', promotionSquarePosition));
+    } else if (symbolRepresentation === "B") {
+        this.piecesOnBoard.push(new Bishop('white', promotionSquarePosition));
+    } else if (symbolRepresentation === "q") {
+        this.piecesOnBoard.push(new Queen('black', promotionSquarePosition));
+    } else if (symbolRepresentation === "r") {
+        this.piecesOnBoard.push(new Rook('black', promotionSquarePosition));
+    } else if (symbolRepresentation === "n") {
+        this.piecesOnBoard.push(new Knight('black', promotionSquarePosition));
+    } else if (symbolRepresentation === "b") {
+        this.piecesOnBoard.push(new Bishop('black', promotionSquarePosition));
     }
+  }
 
-    // making moves
-    checkCheck(color) {
-        const king = this.piecesOnBoard.find( (piece) => piece.color === color 
-                                                            && piece.symbolRepresentation.toUpperCase === 'K');
+  dealWithPawnPromotions(pieceToMove) {
+    if (pieceToMove.symbolRepresentation.toUpperCase() === "P") {
+      if (pieceToMove.color === "white" && pieceToMove.position[0] === 0) {
+    
+        const promotionSquareNo = this.convertPositionToSquareNumber(pieceToMove.position);
+        this.squares[promotionSquareNo].setShowPromotion(true);
 
         return true;
-    }
-
-    calculateAllAvailableMoves() {
-        for (let i = 0; i < this.piecesOnBoard.length; i++) {
-            const piece = this.piecesOnBoard[i];
-            piece.availableMoves = piece.calculateAvailableMoves(this);
-        }
-    }
-
-    calculateFilteredMovesForAll() {
-        for (let i = 0; i < this.piecesOnBoard.length; i++) {
-            const piece = this.piecesOnBoard[i];
-            piece.availableMoves = piece.calculateFilteredMoves(this);
-        }
-    }
-
-    convertPositionToSquareNumber(position) {
-        return 8 * position[0] + position[1];
-    }
-
-    convertSquareNumberToPosition(squareNumber) {
-        return [ Math.floor(squareNumber / 8), Math.floor(squareNumber % 8) ];
-    }
-
-    rotateTurn() {
-        this.setTurn( (prevTurn) => {
-            if (prevTurn === 'white') {
-                this.timers.white.pauseTimer();
-                this.timers.black.playTimer();
-
-                return this.turn = 'black';
-            }
-            else {
-                this.timers.black.pauseTimer();
-                this.timers.white.playTimer();
-                
-                return this.turn = 'white';
-            }
-        } );
-    }
-
-    updateBoard() {
-        this.rotateTurn();
-
-        const newGrid = this.getReducedGridRepresentation();
-        this.setGridCells(newGrid); 
-    }
-
-    findMatchingPiece(squareNo) {
-        let [ fromRow, fromCol ] = this.convertSquareNumberToPosition(squareNo);
-        let [ matchingPiece ] = this.piecesOnBoard.filter( (piece) =>
-                                                piece.position[0] === fromRow &&
-                                                piece.position[1] === fromCol );
-
-        return matchingPiece;
-    }
-
-    capturePieceIfPossible(toSquare) {
-        let capturedPiece = this.findMatchingPiece(toSquare);
-        if (capturedPiece) {
-            this.piecesOnBoard = this.piecesOnBoard.filter( (piece) => piece.position !== capturedPiece.position );
-            this.piecesOffBoard.push(capturedPiece);
-        } 
-    }
-
-    dealWithEnPassant() {
-        // console.log(this.turn);
-        if (this.turn === 'white') {
-            this.piecesOnBoard.forEach( (piece) => {
-                if (piece.symbolRepresentation === 'P') piece.enPassantable = false;
-            });
-        } else {
-            this.piecesOnBoard.forEach( (piece) => {
-                if (piece.symbolRepresentation === 'p') piece.enPassantable = false;
-            });
-        }
-    }
-
-    //* game over
-    timeOut(color) {
-        this.gameOver(`timeout-${color}`);
-    }
-
-    //!here
-    gameOver(gameCondition) {
-        if (gameCondition === 'checkmate') {
-            this.setGameOver(true);
-            this.setGameOverMessage(`${complementColor(this.turn).toUpperCase()} WINS by Checkmate`);
-        } else if (gameCondition === 'stalemate') {
-            this.setGameOver(true);
-            this.setGameOverMessage('DRAW by Stalemate');
-        } else if (gameCondition === 'insufficient') {
-            this.setGameOver(true);
-            this.setGameOverMessage('DRAW by Insufficient Material');
-        } else if (gameCondition.includes('timeout')) {
-            const lostColor = gameCondition.split('-')[1];
-            this.setGameOver(true);
-            this.setGameOverMessage(`${complementColor(lostColor).toUpperCase()} WINS by Timeout`);
-        }
-
-        this.timers.white.pauseTimer();
-        this.timers.black.pauseTimer();
-    }
-
-    insufficientMaterial(color) {
-        const pieces = this.piecesOnBoard.filter( (piece) => piece.color === color );
-        if (pieces.length === 1) { return true; }
-        else if (pieces.length == 2) {
-            let otherPiece;
-            if (pieces[0].symbolRepresentation.toUpperCase() === 'K') { otherPiece = pieces[1]; }
-            else { otherPiece = pieces[0]; }
-
-            if (otherPiece.symbolRepresentation.toUpperCase() === 'N' 
-                            || otherPiece.symbolRepresentation.toUpperCase() === 'B') {
-                                return true;
-            }
-        }
-
-        return false;
-    }
-
-    getGameCondition(color) {
-        const [ king ] = this.piecesOnBoard.filter((piece) => piece.symbolRepresentation.toUpperCase() === 'K' 
-                                                                && piece.color === color);
+      } else if ( pieceToMove.color === "black" && pieceToMove.position[0] === 7) {
         
-        let availableMovesForColor = 0;
-        for (let i = 0; i < this.piecesOnBoard.length && availableMovesForColor === 0; i++) {
-            if (this.piecesOnBoard[i].color === color) { 
-                availableMovesForColor += this.piecesOnBoard[i].availableMoves.length;
-            }
-        }
+        const promotionSquareNo = this.convertPositionToSquareNumber(pieceToMove.position);
+        this.squares[promotionSquareNo].setShowPromotion(true);
 
-        if (king.checkIfKingInCheck(this) && availableMovesForColor === 0) { return "checkmate"; } 
-        else if (availableMovesForColor === 0) { return "stalemate"; }
-        else if (this.insufficientMaterial('white') && this.insufficientMaterial('black')) { return "insufficient"; }
-        else { return "normal"; }  
+        return true;
+      }
     }
 
-    makeMove({ fromSquare, toSquare, pieceSymbol }) {
-        if (fromSquare === toSquare)
-            return;
+    return false;
+  }
 
-        // en-passant setup
-        this.dealWithEnPassant();
+  //* game over
+  timeOut(color) {
+    this.gameOver(`timeout-${color}`);
+  }
 
-        // console.log(this.piecesOnBoard.filter(piece => (piece.symbolRepresentation.toUpperCase() === 'P')));
-        let pieceToMove = this.findMatchingPiece(fromSquare);
-        // console.log(pieceToMove);
-
-        if (pieceToMove.makeMove(this, toSquare)) {
-            this.updateBoard();
-            this.calculateFilteredMovesForAll();
-
-            let gameCondition = this.getGameCondition(this.turn);
-            console.log(gameCondition);
-            if (gameCondition !== "normal") this.gameOver(gameCondition);
-        } 
+  gameOver(gameCondition) {
+    if (gameCondition === "checkmate") {
+      this.setGameOver(true);
+      this.setGameOverMessage(
+        `${complementColor(this.turn).toUpperCase()} WINS by Checkmate`
+      );
+    } else if (gameCondition === "stalemate") {
+      this.setGameOver(true);
+      this.setGameOverMessage("DRAW by Stalemate");
+    } else if (gameCondition === "insufficient") {
+      this.setGameOver(true);
+      this.setGameOverMessage("DRAW by Insufficient Material");
+    } else if (gameCondition.includes("timeout")) {
+      const lostColor = gameCondition.split("-")[1];
+      this.setGameOver(true);
+      this.setGameOverMessage(
+        `${complementColor(lostColor).toUpperCase()} WINS by Timeout`
+      );
     }
+
+    this.timers.white.pauseTimer();
+    this.timers.black.pauseTimer();
+  }
+
+  insufficientMaterial(color) {
+    const pieces = this.piecesOnBoard.filter((piece) => piece.color === color);
+    if (pieces.length === 1) {
+      return true;
+    } else if (pieces.length == 2) {
+      let otherPiece;
+      if (pieces[0].symbolRepresentation.toUpperCase() === "K") {
+        otherPiece = pieces[1];
+      } else {
+        otherPiece = pieces[0];
+      }
+
+      if (
+        otherPiece.symbolRepresentation.toUpperCase() === "N" ||
+        otherPiece.symbolRepresentation.toUpperCase() === "B"
+      ) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  getGameCondition(color) {
+    const [king] = this.piecesOnBoard.filter(
+      (piece) =>
+        piece.symbolRepresentation.toUpperCase() === "K" &&
+        piece.color === color
+    );
+
+    let availableMovesForColor = 0;
+    for (
+      let i = 0;
+      i < this.piecesOnBoard.length && availableMovesForColor === 0;
+      i++
+    ) {
+      if (this.piecesOnBoard[i].color === color) {
+        availableMovesForColor += this.piecesOnBoard[i].availableMoves.length;
+      }
+    }
+
+    if (king.checkIfKingInCheck(this) && availableMovesForColor === 0) {
+      return "checkmate";
+    } else if (availableMovesForColor === 0) {
+      return "stalemate";
+    } else if (
+      this.insufficientMaterial("white") &&
+      this.insufficientMaterial("black")
+    ) {
+      return "insufficient";
+    } else {
+      return "normal";
+    }
+  }
+
+  makeMove({ fromSquare, toSquare, pieceSymbol }) {
+    if (fromSquare === toSquare) return;
+
+    // en-passant setup
+    this.dealWithEnPassant();
+
+    // console.log(this.piecesOnBoard.filter(piece => (piece.symbolRepresentation.toUpperCase() === 'P')));
+    let pieceToMove = this.findMatchingPiece(fromSquare);
+    // console.log(pieceToMove);
+
+    if (pieceToMove.makeMove(this, toSquare)) {
+      if (this.dealWithPawnPromotions(pieceToMove)) { return; } // the flow continues in promoteTo() in Square.jsx
+
+      this.updateBoard();
+      this.calculateFilteredMovesForAll();
+
+      let gameCondition = this.getGameCondition(this.turn);
+      console.log(gameCondition);
+      if (gameCondition !== "normal") this.gameOver(gameCondition);
+    }
+  }
 }
 
 //! filtering out illegal moves

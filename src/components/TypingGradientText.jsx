@@ -26,7 +26,7 @@ const TypingGradientText = ({
 
   return (
     <div className="text-center mb-10">
-      <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-gray-950 via-gray-900 to-gray-950">
+      <h1 className="text-5xl sm:text-5xl md:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-gray-950 via-gray-900 to-gray-950">
         {typedText}
         <span className="animate-blink border-r-2 border-white ml-1 h-full inline-block" />
       </h1>
