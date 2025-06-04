@@ -71,34 +71,47 @@ function Board({
 
 
     return (
-        <>
-            { (chessBoard) ?  
-            ( <div className='flex flex-col gap relative'> 
-                <div className={`absolute top-0 left-0 h-full w-full bg-black/75 z-10 ${(showMessage)? '' : 'hidden'}  flex flex-col items-center justify-center`} >
-                    <div className='text-5xl text-white'> Game Over </div>
-                    <div className='text-3xl text-white'> { gameOverMessage } </div>
-                    <div>
-                        <button 
-                        className='block bg-green-600 hover:bg-green-700 text-white opacity-100 p-1 mt-1' 
-                        onClick={() => setTimeFormat(0) }> New Game </button>
-                    </div>
+      <>
+        {chessBoard ? (
+          <div className="flex flex-col gap relative">
+            {showMessage && (
+              <div className="absolute inset-0 z-50 bg-black/70 backdrop-blur-sm flex flex-col items-center justify-center text-center px-4">
+                <div className="text-white text-6xl font-extrabold animate-pulse drop-shadow-lg">
+                  ♛ Game Over ♛
                 </div>
-                <MyTimer
-                myTimerRef={myTimerRefBlack} 
-                timerDuration={timeFormat} 
-                color={'black'} 
-                chessBoard={chessBoard} />
-                <div className='w-full h-full aspect-square grid grid-cols-8 grid-rows-8'>
-                    { pieceBoard }
+                <div className="mt-4 text-3xl font-semibold text-amber-400 drop-shadow">
+                  {gameOverMessage}
                 </div>
-                <MyTimer
-                    myTimerRef={myTimerRefWhite}
-                    timerDuration={timeFormat}
-                    color={'white'}
-                    chessBoard={chessBoard} /> 
-            </div> ) : '...' }
-        </>
-  )
+                <button
+                  onClick={() => setTimeFormat(0)}
+                  className="mt-6 px-6 py-2 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-full shadow-lg hover:scale-105 transition-transform duration-300"
+                >
+                  Play Again
+                </button>
+              </div>
+            )}
+            
+            <MyTimer
+              myTimerRef={myTimerRefBlack}
+              timerDuration={timeFormat}
+              color={"black"}
+              chessBoard={chessBoard}
+            />
+            <div className="w-full h-full aspect-square grid grid-cols-8 grid-rows-8">
+              {pieceBoard}
+            </div>
+            <MyTimer
+              myTimerRef={myTimerRefWhite}
+              timerDuration={timeFormat}
+              color={"white"}
+              chessBoard={chessBoard}
+            />
+          </div>
+        ) : (
+          "..."
+        )}
+      </>
+    );
 }
 
 export default Board

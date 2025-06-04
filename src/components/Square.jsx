@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import pieces from '../utils/chessPieceRepresentation';
 import pieceSymbolToImage from '../utils/pieceImage';
+import { playSound } from '../utils/soundManager';
 
 function Square({
   number,
@@ -44,6 +45,8 @@ function Square({
     }, []);
 
     const promoteTo = (symbolRepresentation) => {
+      playSound('promotion');
+      
       chessBoard.makePromotion(number, symbolRepresentation);
       setShowPromotion(false);
 

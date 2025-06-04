@@ -1,4 +1,5 @@
 import pieces from "./chessPieceRepresentation";
+import { playSound } from "./soundManager";
 
 function isSafe(row, col) {
     if (row < 0 || row >= 8 || col < 0 || col >= 8) 
@@ -397,6 +398,8 @@ class King extends Piece {
                     kingRook.position = chessBoard.convertSquareNumberToPosition(5);
                 }
             }
+
+            chessBoard.soundToPlay = 'castle'; // setting what sound to play
         } else {
             // not castling
             chessBoard.capturePieceIfPossible(toSquare);
@@ -625,6 +628,8 @@ export class ChessBoard {
 
     this.timers = {};
     this.squares = {};
+
+    this.soundToPlay = 'move';
   }
 
   // setting up
@@ -711,10 +716,10 @@ export class ChessBoard {
   checkCheck(color) {
     const king = this.piecesOnBoard.find(
       (piece) =>
-        piece.color === color && piece.symbolRepresentation.toUpperCase === "K"
+        piece.color === color && piece.symbolRepresentation.toUpperCase() === "K"
     );
 
-    return true;
+    return king.checkIfKingInCheck(this);
   }
 
   calculateAllAvailableMoves() {
@@ -778,6 +783,9 @@ export class ChessBoard {
         (piece) => piece.position !== capturedPiece.position
       );
       this.piecesOffBoard.push(capturedPiece);
+
+      // if a piece is captured then this sound should be played...
+      this.soundToPlay = 'capture';
     }
   }
 
@@ -804,22 +812,39 @@ export class ChessBoard {
                                                                     && piece.position[1] === promotionSquarePosition[1]));
 
     // add the new piece
+    let newPiece;
     if (symbolRepresentation === "Q") {
-        this.piecesOnBoard.push(new Queen('white', promotionSquarePosition));
+        newPiece = new Queen('white', promotionSquarePosition);
+        newPiece.calculateFilteredMoves(this);
+        this.piecesOnBoard.push(newPiece);
     } else if (symbolRepresentation === "R") {
-        this.piecesOnBoard.push(new Rook('white', promotionSquarePosition));
+        newPiece = new Rook('white', promotionSquarePosition)
+        newPiece.calculateFilteredMoves(this);
+        this.piecesOnBoard.push(newPiece);
     } else if (symbolRepresentation === "N") {
-        this.piecesOnBoard.push(new Knight('white', promotionSquarePosition));
+        newPiece = new Knight('white', promotionSquarePosition)
+        newPiece.calculateFilteredMoves(this);
+        this.piecesOnBoard.push(newPiece);
     } else if (symbolRepresentation === "B") {
-        this.piecesOnBoard.push(new Bishop('white', promotionSquarePosition));
+        newPiece = new Bishop('white', promotionSquarePosition)
+        newPiece.calculateFilteredMoves(this);
+        this.piecesOnBoard.push(newPiece);
     } else if (symbolRepresentation === "q") {
-        this.piecesOnBoard.push(new Queen('black', promotionSquarePosition));
+        newPiece = new Queen('black', promotionSquarePosition)
+        newPiece.calculateFilteredMoves(this);
+        this.piecesOnBoard.push(newPiece);
     } else if (symbolRepresentation === "r") {
-        this.piecesOnBoard.push(new Rook('black', promotionSquarePosition));
+        newPiece = new Rook('black', promotionSquarePosition)
+        newPiece.calculateFilteredMoves(this);
+        this.piecesOnBoard.push(newPiece);
     } else if (symbolRepresentation === "n") {
-        this.piecesOnBoard.push(new Knight('black', promotionSquarePosition));
+        newPiece = new Knight('black', promotionSquarePosition)
+        newPiece.calculateFilteredMoves(this);
+        this.piecesOnBoard.push(newPiece);
     } else if (symbolRepresentation === "b") {
-        this.piecesOnBoard.push(new Bishop('black', promotionSquarePosition));
+        newPiece = new Bishop('black', promotionSquarePosition)
+        newPiece.calculateFilteredMoves(this);
+        this.piecesOnBoard.push(newPiece);
     }
   }
 
@@ -930,32 +955,36 @@ export class ChessBoard {
   makeMove({ fromSquare, toSquare, pieceSymbol }) {
     if (fromSquare === toSquare) return;
 
+    // sound setup
+    this.soundToPlay = 'move';
+
     // en-passant setup
     this.dealWithEnPassant();
-
-    // console.log(this.piecesOnBoard.filter(piece => (piece.symbolRepresentation.toUpperCase() === 'P')));
     let pieceToMove = this.findMatchingPiece(fromSquare);
-    // console.log(pieceToMove);
+    
 
     if (pieceToMove.makeMove(this, toSquare)) {
-      if (this.dealWithPawnPromotions(pieceToMove)) { return; } // the flow continues in promoteTo() in Square.jsx
+        if (this.dealWithPawnPromotions(pieceToMove)) { return; } // the flow continues in promoteTo() in Square.jsx
+        
+        this.updateBoard();
+        this.calculateFilteredMovesForAll();
 
-      this.updateBoard();
-      this.calculateFilteredMovesForAll();
+        if (this.checkCheck(this.turn)) {   this.soundToPlay = 'check';     }
 
-      let gameCondition = this.getGameCondition(this.turn);
-      console.log(gameCondition);
-      if (gameCondition !== "normal") this.gameOver(gameCondition);
+        let gameCondition = this.getGameCondition(this.turn);
+        if (gameCondition !== "normal") {
+            playSound('gameover');
+            this.gameOver(gameCondition);
+        } else {
+            playSound(this.soundToPlay);
+        }
     }
   }
 }
 
 //! filtering out illegal moves
 
-// TODO: king in check     -->   done
-// TODO: check for checkmate and stalemate   -->   done
-// TODO: timer mechanism + time control options     -->    done
-// TODO: pawn promotions + square highlights
+// TODO: pawn promotions --> done + square highlights 
 // TODO: test chess
 // TODO: AI
 
