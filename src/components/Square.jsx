@@ -8,7 +8,8 @@ function Square({
   piece,
   chessBoard,
   turn,
-  pieceImageSrc
+  pieceImageSrc,
+  flipBoard
 }) {
     const row = Math.floor(number / 8);
     const col = Math.floor(number % 8);
@@ -63,13 +64,20 @@ function Square({
       onDragOver={handleDragOver} 
       onDrop={handleDrop}>
       { (pieceImageSrc) ? <img 
-                              className='block h-[85%] w-[85%]' 
+                              className={`block h-[85%] w-[85%] ${(flipBoard)? 'rotate-180' : ''} transition-transform duration-200 will-change-transform`} 
                               src={pieceImageSrc} 
                               draggable={`${ (pieces.whitePieces.includes(piece) && turn === 'white' || 
                                               pieces.blackPieces.includes(piece) && turn === 'black')? 'true':'false'}`} 
                               onDragStart={handleDragStart} /> : null }
-      <span className='absolute top-0.5 left-0.5 text-xs font-bold'>{ (col == 0) ? `${8-row}` : '' }</span>
-      <span className='absolute bottom-0.5 right-0.5 text-xs font-bold'> { (row == 7) ? String.fromCharCode('a'.charCodeAt(0)+col): ''}</span>
+
+      <span className={`absolute ${(!flipBoard)? 'top-0.5 left-0.5' : 'bottom-0.5 right-0.5'} text-xs font-bold`}>
+        { (!flipBoard && col == 0) ? `${8-row}` : '' }
+        {  (flipBoard && col == 7) ? `${8-row}` : '' }
+      </span>
+      <span className={`absolute ${(flipBoard)? 'top-0.5 left-0.5' : 'bottom-0.5 right-0.5'} text-xs font-bold`}> 
+        { (!flipBoard && row == 7) ? String.fromCharCode('a'.charCodeAt(0)+col): ''}
+        { (flipBoard && row == 0) ? String.fromCharCode('a'.charCodeAt(0)+col): ''}
+      </span>
 
       <div className={`${(promotionSquare && showPromotion) ? '' : 'hidden' } absolute top-0 left-0 -translate-x-1/2 -translate-y-[100%] z-[100] bg-blue-400 border-1 border-white flex flex-row w-[200px]`}>
                                 { (row === 0) ? 

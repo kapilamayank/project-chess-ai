@@ -23,6 +23,8 @@ function Board({
     const [gameOverMessage, setGameOverMessage] = useState('');
     const [showMessage, setShowMessage] = useState(false);
 
+    const [flipBoard, setFlipBoard] = useState(false);
+
     useEffect(() => {
         const newBoard = new ChessBoard();
         newBoard.setGridCellsSetter(setGridCells);
@@ -46,7 +48,7 @@ function Board({
     
     useEffect(() => {
         setPieceBoard(formPieceBoard(gridCells, pieceSymbolToImage));
-    }, [gridCells]);
+    }, [gridCells, flipBoard]);
 
     const formPieceBoard = (gridCells, pieceSymbolToImage) => {
         if (!gridCells.length) return null;
@@ -64,6 +66,7 @@ function Board({
                                                             piece={value}
                                                             chessBoard={chessBoard}
                                                             turn={turn}
+                                                            flipBoard={flipBoard}
                                                             pieceImageSrc={pieceSymbolToImage[value]} />));
         return pieceBoard;
     }
@@ -73,7 +76,8 @@ function Board({
     return (
       <>
         {chessBoard ? (
-          <div className="flex flex-col gap relative">
+          <div>
+          <div className={`flex flex-col ${(flipBoard)? 'flex-col-reverse' : 'flex-col'} gap relative`}>
             {showMessage && (
               <div className="absolute inset-0 z-50 bg-black/70 backdrop-blur-sm flex flex-col items-center justify-center text-center px-4">
                 <div className="text-white text-6xl font-extrabold animate-pulse drop-shadow-lg">
@@ -90,14 +94,14 @@ function Board({
                 </button>
               </div>
             )}
-            
+
             <MyTimer
               myTimerRef={myTimerRefBlack}
               timerDuration={timeFormat}
               color={"black"}
               chessBoard={chessBoard}
             />
-            <div className="w-full h-full aspect-square grid grid-cols-8 grid-rows-8">
+            <div className={`w-full h-full aspect-square grid grid-cols-8 grid-rows-8 ${(flipBoard)? 'rotate-180' : ''} `}>
               {pieceBoard}
             </div>
             <MyTimer
@@ -106,6 +110,11 @@ function Board({
               color={"white"}
               chessBoard={chessBoard}
             />
+          </div>
+
+          <button 
+                className='border-1 border-black mt-1 p-1'
+                onClick={() => setFlipBoard((prev) => (!prev))}> Flip Board </button>
           </div>
         ) : (
           "..."
