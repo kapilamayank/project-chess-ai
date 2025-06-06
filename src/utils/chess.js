@@ -398,8 +398,6 @@ class King extends Piece {
                     kingRook.position = chessBoard.convertSquareNumberToPosition(5);
                 }
             }
-
-            chessBoard.soundToPlay = 'castle'; // setting what sound to play
         } else {
             // not castling
             chessBoard.capturePieceIfPossible(toSquare);
@@ -628,8 +626,6 @@ export class ChessBoard {
 
     this.timers = {};
     this.squares = {};
-
-    this.soundToPlay = 'move';
   }
 
   // setting up
@@ -783,9 +779,6 @@ export class ChessBoard {
         (piece) => piece.position !== capturedPiece.position
       );
       this.piecesOffBoard.push(capturedPiece);
-
-      // if a piece is captured then this sound should be played...
-      this.soundToPlay = 'capture';
     }
   }
 
@@ -952,31 +945,44 @@ export class ChessBoard {
     }
   }
 
+  getSoundToPlay(pieceToMove, fromSquare, toSquare, prevPiecesOffBoardLength) {
+    let soundToPlay = 'move'; // default sound
+
+    if (this.piecesOffBoard.length !== prevPiecesOffBoardLength) { soundToPlay = 'capture'; } // length inc -> capture occured
+
+    if (pieceToMove.symbolRepresentation.toUpperCase() === 'K') {
+        if (Math.abs(toSquare - fromSquare) === 2) { soundToPlay = 'castle'; }
+    }
+    
+    if (this.checkCheck(complementColor(pieceToMove.color))) {
+        soundToPlay = 'check';
+    }
+
+    return soundToPlay;
+  }
+
   makeMove({ fromSquare, toSquare, pieceSymbol }) {
     if (fromSquare === toSquare) return;
-
-    // sound setup
-    this.soundToPlay = 'move';
 
     // en-passant setup
     this.dealWithEnPassant();
     let pieceToMove = this.findMatchingPiece(fromSquare);
     
-
+    let prevPiecesOffBoardLength = this.piecesOffBoard.length; // to detect if a capture occurred (change in length)
     if (pieceToMove.makeMove(this, toSquare)) {
         if (this.dealWithPawnPromotions(pieceToMove)) { return; } // the flow continues in promoteTo() in Square.jsx
         
         this.updateBoard();
         this.calculateFilteredMovesForAll();
 
-        if (this.checkCheck(this.turn)) {   this.soundToPlay = 'check';     }
-
         let gameCondition = this.getGameCondition(this.turn);
+
+        const soundToPlay = this.getSoundToPlay(pieceToMove, fromSquare, toSquare, prevPiecesOffBoardLength);
         if (gameCondition !== "normal") {
             playSound('gameover');
             this.gameOver(gameCondition);
         } else {
-            playSound(this.soundToPlay);
+            playSound(soundToPlay);
         }
     }
   }
